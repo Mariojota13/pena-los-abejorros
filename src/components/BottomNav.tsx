@@ -32,13 +32,13 @@ export default function BottomNav() {
           to={item.to}
           end={item.end}
           className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs ${
+            `flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2.5 text-[10px] ${
               isActive ? 'font-bold text-black' : 'text-neutral-400'
             }`
           }
         >
-          <span className="text-lg">{item.icon}</span>
-          {item.label}
+          <span className="text-base">{item.icon}</span>
+          <span className="w-full truncate text-center">{item.label}</span>
         </NavLink>
       ))}
     </nav>
