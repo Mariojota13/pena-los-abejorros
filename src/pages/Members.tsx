@@ -25,6 +25,8 @@ export default function Members() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const isAdmin = !!me?.is_admin
 
@@ -51,6 +53,7 @@ export default function Members() {
     setAvatarFile(null)
     setAvatarPreview(null)
     setError(null)
+    setConfirmingDelete(false)
   }
 
   function startCreating() {
@@ -158,6 +161,24 @@ export default function Members() {
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!editing) return
+    setDeleting(true)
+    setError(null)
+    try {
+      await callEdgeFunction('delete-member', { profileId: editing.id })
+      setEditing(null)
+      setConfirmingDelete(false)
+      await load()
+    } catch (err) {
+      const detail = supabaseErrorMessage(err)
+      setError(`No se pudo eliminar${detail ? `: ${detail}` : '.'}`)
+      setConfirmingDelete(false)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -314,6 +335,45 @@ export default function Members() {
             Cancelar
           </button>
         </form>
+
+        {editing && editing.id !== me?.id && (
+          <div className="flex flex-col gap-2 border-t border-black/10 pt-6">
+            {confirmingDelete ? (
+              <>
+                <p className="text-sm text-neutral-700">
+                  ¿Seguro que quieres eliminar a {editing.name}? Se borrará también su cuenta de acceso y todos
+                  sus datos (cuotas, multas, sanciones). Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 rounded-xl bg-red-600 px-4 py-3 font-semibold text-white active:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleting ? 'Eliminando…' : 'Sí, eliminar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={deleting}
+                    className="flex-1 rounded-xl border border-black/15 px-4 py-3 text-neutral-700"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                className="w-full rounded-xl border-2 border-red-600 px-4 py-3 font-semibold text-red-600 active:bg-red-50"
+              >
+                Eliminar miembro
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }
