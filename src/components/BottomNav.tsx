@@ -1,21 +1,23 @@
 import { NavLink } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
 
-const BASE_ITEMS = [
+type NavItem = { to: string; label: string; icon: string; end?: boolean }
+
+const BASE_ITEMS: NavItem[] = [
   { to: '/', label: 'Inicio', icon: '🏠', end: true },
   { to: '/cumpleanos', label: 'Cumples', icon: '🎂' },
   { to: '/eventos', label: 'Eventos', icon: '📅' },
   { to: '/miembros', label: 'Miembros', icon: '👥' },
 ]
 
-const PROFILE_ITEM = { to: '/perfil', label: 'Perfil', icon: '👤' }
+const PROFILE_ITEM: NavItem = { to: '/perfil', label: 'Perfil', icon: '👤' }
 
 export default function BottomNav() {
   const { profile } = useSession()
   const isAdmin = !!profile?.is_admin
   const canSeeTreasury = isAdmin || profile?.role_title === 'Tesorero'
 
-  const middleItems = [
+  const middleItems: NavItem[] = [
     ...(canSeeTreasury ? [{ to: '/cuotas', label: 'Cuotas', icon: '💰' }] : []),
     ...(isAdmin ? [{ to: '/multas', label: 'Multas', icon: '🚨' }] : []),
   ]
