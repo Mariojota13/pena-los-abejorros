@@ -17,6 +17,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [emailCopied, setEmailCopied] = useState(false)
 
   const isAdmin = !!me?.is_admin
 
@@ -81,6 +82,17 @@ export default function Home() {
       setTimeout(() => setCopied(false), 1500)
     } catch {
       // El navegador denegó el permiso de portapapeles; el número ya es visible para copiar a mano.
+    }
+  }
+
+  async function handleCopyEmail() {
+    if (!info?.email) return
+    try {
+      await navigator.clipboard.writeText(info.email)
+      setEmailCopied(true)
+      setTimeout(() => setEmailCopied(false), 1500)
+    } catch {
+      // El navegador denegó el permiso de portapapeles; el email ya es visible para copiar a mano.
     }
   }
 
@@ -160,14 +172,21 @@ export default function Home() {
       <div className="flex flex-col gap-3">
         <h2 className="text-xs font-medium uppercase tracking-wide text-neutral-600">Información general</h2>
 
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-black/10 bg-white px-4 py-3 shadow-sm">
-          <span className="text-neutral-500">✉️ Email</span>
+        <div className="rounded-xl border border-black/10 bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-neutral-500">✉️ Email</span>
+            {info.email && (
+              <button onClick={handleCopyEmail} className="shrink-0 text-xs font-semibold text-black underline">
+                {emailCopied ? 'Copiado ✓' : 'Copiar'}
+              </button>
+            )}
+          </div>
           {info.email ? (
-            <a href={`mailto:${info.email}`} className="truncate font-semibold text-black underline">
+            <a href={`mailto:${info.email}`} className="mt-1 block break-words font-medium text-neutral-900">
               {info.email}
             </a>
           ) : (
-            <span className="text-neutral-400">Sin definir</span>
+            <p className="mt-1 text-neutral-400">Sin definir</p>
           )}
         </div>
 
