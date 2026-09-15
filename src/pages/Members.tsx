@@ -4,9 +4,9 @@ import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage } from '../lib/errors'
 import { AVATARS_BUCKET, avatarUrl } from '../lib/avatar'
 import type { Profile } from '../types'
+import { ROLE_OPTIONS } from '../lib/roles'
 
 const NO_ROLE = 'Sin cargo asignado'
-const ROLE_OPTIONS = ['Socio', 'Vocal', 'Tesorero', 'Presidente', 'Vicepresidente', 'Secretario']
 
 export default function Members() {
   const { profile: me } = useSession()

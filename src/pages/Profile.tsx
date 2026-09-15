@@ -4,6 +4,7 @@ import { supabaseErrorMessage } from '../lib/errors'
 import { supabase } from '../lib/supabase'
 import { AVATARS_BUCKET, avatarUrl } from '../lib/avatar'
 import DuesProgress from '../components/DuesProgress'
+import { ROLE_OPTIONS } from '../lib/roles'
 import type { Due, CommunityInfo, Fine, Sanction } from '../types'
 
 function severityClasses(severity: Sanction['severity']) {
@@ -25,6 +26,7 @@ export default function Profile() {
   const [nickname, setNickname] = useState(profile?.nickname ?? '')
   const [birthday, setBirthday] = useState(profile?.birthday ?? '')
   const [memberSinceYear, setMemberSinceYear] = useState(profile?.member_since_year?.toString() ?? '')
+  const [roleTitle, setRoleTitle] = useState(profile?.role_title ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -76,6 +78,7 @@ export default function Profile() {
     setNickname(profile!.nickname ?? '')
     setBirthday(profile!.birthday ?? '')
     setMemberSinceYear(profile!.member_since_year?.toString() ?? '')
+    setRoleTitle(profile!.role_title ?? '')
     setAvatarFile(null)
     setAvatarPreview(null)
     setError(null)
@@ -112,7 +115,14 @@ export default function Profile() {
         if (uploadError) throw uploadError
         avatarPath = path
       }
-      await updateProfile({ name: name.trim(), nickname, birthday, memberSinceYear, avatarPath })
+      await updateProfile({
+        name: name.trim(),
+        nickname,
+        birthday,
+        memberSinceYear,
+        avatarPath,
+        ...(profile!.is_admin ? { roleTitle } : {}),
+      })
       setEditing(false)
     } catch (err) {
       const detail = supabaseErrorMessage(err)
@@ -238,6 +248,26 @@ export default function Profile() {
               className="mt-1 w-full rounded-xl border border-black/15 bg-white px-4 py-3 text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-black"
             />
           </label>
+          {profile.is_admin && (
+            <label className="text-left text-sm text-neutral-700">
+              Cargo
+              <select
+                value={roleTitle}
+                onChange={(e) => setRoleTitle(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-black/15 bg-white px-4 py-3 text-neutral-900 outline-none focus:border-black"
+              >
+                <option value="">Selecciona un cargo…</option>
+                {ROLE_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+                {roleTitle && !ROLE_OPTIONS.includes(roleTitle) && (
+                  <option value={roleTitle}>{roleTitle} (actual)</option>
+                )}
+              </select>
+            </label>
+          )}
           {error && <p className="text-sm font-medium text-red-700">{error}</p>}
           <button
             type="submit"

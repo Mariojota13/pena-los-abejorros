@@ -14,6 +14,7 @@ interface SessionContextValue {
     birthday: string
     memberSinceYear: string
     avatarPath: string | null
+    roleTitle?: string
   }) => Promise<void>
   changePassword: (newPassword: string) => Promise<{ error: string | null }>
   signOut: () => void
@@ -95,18 +96,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     birthday: string
     memberSinceYear: string
     avatarPath: string | null
+    roleTitle?: string
   }) {
     if (!profile) return
     const year = changes.memberSinceYear.trim() ? Number(changes.memberSinceYear) : null
+    const updates: Record<string, unknown> = {
+      name: changes.name,
+      nickname: changes.nickname.trim() || null,
+      birthday: changes.birthday || null,
+      member_since_year: year,
+      avatar_path: changes.avatarPath,
+    }
+    if (changes.roleTitle !== undefined) {
+      updates.role_title = changes.roleTitle.trim() || null
+    }
     const { data, error } = await supabase
       .from('profiles')
-      .update({
-        name: changes.name,
-        nickname: changes.nickname.trim() || null,
-        birthday: changes.birthday || null,
-        member_since_year: year,
-        avatar_path: changes.avatarPath,
-      })
+      .update(updates)
       .eq('id', profile.id)
       .select()
       .single()
