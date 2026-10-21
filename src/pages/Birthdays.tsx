@@ -2,46 +2,9 @@ import { useEffect, useState } from 'react'
 import { PageSkeleton } from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
-import { avatarUrl } from '../lib/avatar'
+import { HexAvatar } from '../components/HexAvatar'
+import { MONTH_NAMES, computeUpcoming, relativeLabel, type Upcoming } from '../lib/birthdays'
 import type { Profile } from '../types'
-
-const MONTH_NAMES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-]
-
-interface Upcoming {
-  profile: Profile
-  nextDate: Date
-  daysUntil: number
-  turningAge: number | null
-}
-
-function startOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-}
-
-function computeUpcoming(profiles: Profile[]): Upcoming[] {
-  const today = startOfDay(new Date())
-
-  return profiles
-    .filter((p) => !!p.birthday)
-    .map((p) => {
-      const [year, month, day] = p.birthday!.split('-').map(Number)
-      let next = new Date(today.getFullYear(), month - 1, day)
-      if (next < today) next = new Date(today.getFullYear() + 1, month - 1, day)
-      const daysUntil = Math.round((next.getTime() - today.getTime()) / 86_400_000)
-      const turningAge = year ? next.getFullYear() - year : null
-      return { profile: p, nextDate: next, daysUntil, turningAge }
-    })
-    .sort((a, b) => a.daysUntil - b.daysUntil)
-}
-
-function relativeLabel(daysUntil: number) {
-  if (daysUntil === 0) return '¡Hoy! 🎉'
-  if (daysUntil === 1) return 'Mañana'
-  return `En ${daysUntil} días`
-}
 
 export default function Birthdays() {
   const { profile: me } = useSession()
@@ -119,16 +82,6 @@ export default function Birthdays() {
           )
         })}
       </div>
-    </div>
-  )
-}
-
-function HexAvatar({ profile }: { profile: Profile }) {
-  const photo = avatarUrl(profile.avatar_path)
-  if (photo) return <img src={photo} alt="" className="hex-cell h-10 w-10 shrink-0 object-cover" />
-  return (
-    <div className="hex-cell flex h-10 w-10 shrink-0 items-center justify-center bg-black text-sm font-bold text-white">
-      {profile.name.charAt(0).toUpperCase()}
     </div>
   )
 }

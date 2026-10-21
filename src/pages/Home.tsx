@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useToast } from '../context/ToastContext'
 import { PageSkeleton } from '../components/Skeleton'
+import HomeSummary from '../components/HomeSummary'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage } from '../lib/errors'
@@ -172,6 +173,8 @@ export default function Home() {
         <p className="text-neutral-700">Hola,</p>
         <h1 className="text-2xl font-semibold text-neutral-900">{me?.name} 👋</h1>
       </div>
+
+      {me && <HomeSummary me={me} duesTarget={info.dues_target} />}
 
       <div className="flex flex-col gap-3">
         <h2 className="text-xs font-medium uppercase tracking-wide text-neutral-600">Información general</h2>

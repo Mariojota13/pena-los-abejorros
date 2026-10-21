@@ -4,6 +4,7 @@ import { PageSkeleton } from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
+import { todayStr } from '../lib/birthdays'
 import type { CommunityEvent } from '../types'
 
 const MONTH_NAMES = [
@@ -99,11 +100,9 @@ export default function Events() {
     return <PageSkeleton cards={3} withAvatar />
   }
 
-  // Fecha de hoy en hora local (no UTC), en formato YYYY-MM-DD
-  const now = new Date()
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-  const upcoming = events.filter((ev) => ev.event_date >= todayStr)
-  const past = events.filter((ev) => ev.event_date < todayStr).reverse()
+  const today = todayStr()
+  const upcoming = events.filter((ev) => ev.event_date >= today)
+  const past = events.filter((ev) => ev.event_date < today).reverse()
 
   if (showForm) {
     return (
