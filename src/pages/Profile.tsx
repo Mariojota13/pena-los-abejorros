@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useToast } from '../context/ToastContext'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage } from '../lib/errors'
 import { supabase } from '../lib/supabase'
@@ -21,6 +22,7 @@ function formatDate(date: string | null) {
 
 export default function Profile() {
   const { profile, updateProfile, changePassword, signOut } = useSession()
+  const { showToast } = useToast()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(profile?.name ?? '')
   const [nickname, setNickname] = useState(profile?.nickname ?? '')
@@ -124,6 +126,7 @@ export default function Profile() {
         ...(profile!.is_admin ? { roleTitle } : {}),
       })
       setEditing(false)
+      showToast('Perfil actualizado')
     } catch (err) {
       const detail = supabaseErrorMessage(err)
       setError(`No se pudo guardar${detail ? `: ${detail}` : '. Inténtalo de nuevo.'}`)

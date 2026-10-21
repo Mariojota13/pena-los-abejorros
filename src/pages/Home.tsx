@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useToast } from '../context/ToastContext'
+import { PageSkeleton } from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage } from '../lib/errors'
@@ -9,6 +11,7 @@ const STATUTES_PATH = 'estatutos.pdf'
 
 export default function Home() {
   const { profile: me } = useSession()
+  const { showToast } = useToast()
   const [info, setInfo] = useState<CommunityInfo | null>(null)
   const [editing, setEditing] = useState(false)
   const [email, setEmail] = useState('')
@@ -66,6 +69,7 @@ export default function Home() {
       if (error) throw error
       setInfo(data as CommunityInfo)
       setEditing(false)
+      showToast('Información guardada')
     } catch (err) {
       const detail = supabaseErrorMessage(err)
       setError(`No se pudo guardar${detail ? `: ${detail}` : '. Inténtalo de nuevo.'}`)
@@ -105,7 +109,7 @@ export default function Home() {
   }
 
   if (info === null) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
+    return <PageSkeleton cards={3} />
   }
 
   if (editing) {

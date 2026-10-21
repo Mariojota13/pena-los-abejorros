@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useToast } from '../context/ToastContext'
+import { PageSkeleton } from '../components/Skeleton'
 import { supabase, callEdgeFunction } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage } from '../lib/errors'
@@ -10,6 +12,7 @@ const NO_ROLE = 'Sin cargo asignado'
 
 export default function Members() {
   const { profile: me } = useSession()
+  const { showToast } = useToast()
   const [profiles, setProfiles] = useState<Profile[] | null>(null)
   const [editing, setEditing] = useState<Profile | null>(null)
   const [creating, setCreating] = useState(false)
@@ -149,6 +152,7 @@ export default function Members() {
           .eq('id', editing.id)
         if (error) throw error
       }
+      showToast(creating ? 'Miembro creado' : 'Cambios guardados')
       setEditing(null)
       setCreating(false)
       await load()
@@ -170,6 +174,7 @@ export default function Members() {
     setError(null)
     try {
       await callEdgeFunction('delete-member', { profileId: editing.id })
+      showToast('Miembro eliminado')
       setEditing(null)
       setConfirmingDelete(false)
       await load()
@@ -183,7 +188,7 @@ export default function Members() {
   }
 
   if (profiles === null) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
+    return <PageSkeleton cards={5} withAvatar />
   }
 
   if (creating || editing) {

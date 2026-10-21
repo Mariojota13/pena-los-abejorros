@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useToast } from '../context/ToastContext'
+import { PageSkeleton } from '../components/Skeleton'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
@@ -20,6 +22,7 @@ function severityClasses(severity: Sanction['severity']) {
 
 export default function Sanctions() {
   const { profile: me } = useSession()
+  const { showToast } = useToast()
   const [profiles, setProfiles] = useState<Profile[] | null>(null)
   const [fines, setFines] = useState<Fine[] | null>(null)
   const [sanctions, setSanctions] = useState<Sanction[] | null>(null)
@@ -89,6 +92,7 @@ export default function Sanctions() {
       })
       if (error) throw error
       setAddingType(null)
+      showToast('Multa añadida')
       await load()
     } catch (err) {
       const detail = supabaseErrorMessage(err)
@@ -117,6 +121,7 @@ export default function Sanctions() {
       })
       if (error) throw error
       setAddingType(null)
+      showToast('Sanción añadida')
       await load()
     } catch (err) {
       const detail = supabaseErrorMessage(err)
@@ -132,22 +137,30 @@ export default function Sanctions() {
     if (error) {
       const detail = supabaseErrorMessage(error)
       window.alert(`No se pudo cambiar el estado de la multa${detail ? `: ${detail}` : '.'}`)
+    } else {
+      showToast(newStatus === 'pagada' ? 'Multa marcada como pagada' : 'Multa marcada como pendiente')
     }
     await load()
   }
 
   async function handleDeleteFine(id: string) {
     const deleted = await confirmAndDelete(() => supabase.from('fines').delete().eq('id', id).select(), 'esta multa')
-    if (deleted) await load()
+    if (deleted) {
+      showToast('Multa borrada')
+      await load()
+    }
   }
 
   async function handleDeleteSanction(id: string) {
     const deleted = await confirmAndDelete(() => supabase.from('sanctions').delete().eq('id', id).select(), 'esta sanción')
-    if (deleted) await load()
+    if (deleted) {
+      showToast('Sanción borrada')
+      await load()
+    }
   }
 
   if (profiles === null || fines === null || sanctions === null) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
+    return <PageSkeleton cards={5} withAvatar />
   }
 
   if (selected) {

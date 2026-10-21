@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useToast } from '../context/ToastContext'
+import { PageSkeleton } from '../components/Skeleton'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
@@ -14,6 +16,7 @@ function formatDate(date: string) {
 
 export default function Treasury() {
   const { profile: me } = useSession()
+  const { showToast } = useToast()
   const [profiles, setProfiles] = useState<Profile[] | null>(null)
   const [dues, setDues] = useState<Due[] | null>(null)
   const [info, setInfo] = useState<CommunityInfo | null>(null)
@@ -91,6 +94,7 @@ export default function Treasury() {
       if (error) throw error
       setInfo(data as CommunityInfo)
       setEditingTarget(false)
+      showToast('Objetivo de cuotas guardado')
     } catch (err) {
       const detail = supabaseErrorMessage(err)
       setTargetError(`No se pudo guardar${detail ? `: ${detail}` : '.'}`)
@@ -118,6 +122,7 @@ export default function Treasury() {
       })
       if (error) throw error
       setShowForm(false)
+      showToast('Cuota registrada')
       await load()
     } catch (err) {
       const detail = supabaseErrorMessage(err)
@@ -129,11 +134,14 @@ export default function Treasury() {
 
   async function handleDelete(id: string) {
     const deleted = await confirmAndDelete(() => supabase.from('dues').delete().eq('id', id).select(), 'esta cuota')
-    if (deleted) await load()
+    if (deleted) {
+      showToast('Cuota borrada')
+      await load()
+    }
   }
 
   if (profiles === null || dues === null || info === null) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
+    return <PageSkeleton cards={5} withAvatar />
   }
 
   if (selected) {

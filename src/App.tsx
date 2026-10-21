@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SessionProvider, useSession } from './context/SessionContext'
+import { ToastProvider } from './context/ToastContext'
+import { SplashScreen } from './components/Skeleton'
 import Login from './pages/Login'
 import NoProfile from './pages/NoProfile'
 import AppLayout from './components/AppLayout'
@@ -15,7 +17,7 @@ function Gate() {
   const { loading, hasSession, profile } = useSession()
 
   if (loading) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-400">Cargando…</div>
+    return <SplashScreen />
   }
 
   if (!hasSession) return <Login />
@@ -41,7 +43,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <SessionProvider>
-        <Gate />
+        <ToastProvider>
+          <Gate />
+        </ToastProvider>
       </SessionProvider>
     </BrowserRouter>
   )

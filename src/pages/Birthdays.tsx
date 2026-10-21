@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PageSkeleton } from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { avatarUrl } from '../lib/avatar'
@@ -57,7 +58,7 @@ export default function Birthdays() {
   }
 
   if (upcoming === null) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
+    return <PageSkeleton withAvatar />
   }
 
   const withoutBirthday = upcoming.length === 0

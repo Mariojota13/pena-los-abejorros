@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useToast } from '../context/ToastContext'
+import { PageSkeleton } from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
@@ -21,6 +23,7 @@ function formatTime(time: string | null) {
 
 export default function Events() {
   const { profile: me } = useSession()
+  const { showToast } = useToast()
   const [events, setEvents] = useState<CommunityEvent[] | null>(null)
   const [showPast, setShowPast] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -74,6 +77,7 @@ export default function Events() {
       setLocation('')
       setDescription('')
       setShowForm(false)
+      showToast('Evento creado')
       await load()
     } catch (err) {
       const detail = supabaseErrorMessage(err)
@@ -85,11 +89,14 @@ export default function Events() {
 
   async function handleDelete(id: string) {
     const deleted = await confirmAndDelete(() => supabase.from('events').delete().eq('id', id).select(), 'este evento')
-    if (deleted) await load()
+    if (deleted) {
+      showToast('Evento borrado')
+      await load()
+    }
   }
 
   if (events === null) {
-    return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
+    return <PageSkeleton cards={3} withAvatar />
   }
 
   // Fecha de hoy en hora local (no UTC), en formato YYYY-MM-DD
