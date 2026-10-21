@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
-import { formatDuesLabel } from '../lib/dues'
+import { TreasurySummary, MemberDuesList, computeBalances } from '../components/TreasuryOverview'
 import DuesProgress from '../components/DuesProgress'
 import type { Profile, Due, CommunityInfo } from '../types'
 
@@ -144,6 +144,23 @@ export default function Treasury() {
     return <PageSkeleton cards={5} withAvatar />
   }
 
+  const balances = computeBalances(profiles, dues, info.dues_target)
+
+  async function handleShare(text: string) {
+    try {
+      if (navigator.share) {
+        await navigator.share({ text })
+        return
+      }
+      await navigator.clipboard.writeText(text)
+      showToast('Lista copiada: pégala en WhatsApp')
+    } catch (err) {
+      // Si el usuario cierra el menú de compartir no hay que avisar de nada
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      window.alert(text)
+    }
+  }
+
   if (selected) {
     const memberDues = dues.filter((d) => d.profile_id === selected.id)
     const total = memberDues.reduce((sum, d) => sum + Number(d.amount), 0)
@@ -243,6 +260,8 @@ export default function Treasury() {
     <div className="flex flex-1 flex-col gap-4 px-6 py-8">
       <h1 className="text-xl font-semibold text-neutral-900">💰 Cuotas</h1>
 
+      <TreasurySummary balances={balances} target={info.dues_target} />
+
       <div className="rounded-xl border border-black/10 bg-white p-4 shadow-sm">
         {editingTarget ? (
           <form onSubmit={handleSaveTarget} className="flex flex-col gap-3">
@@ -281,7 +300,9 @@ export default function Treasury() {
             <div>
               <p className="text-xs uppercase tracking-wide text-neutral-500">Objetivo de cuota</p>
               <p className="mt-1 font-medium text-neutral-900">
-                {info.dues_target ? `${info.dues_target.toFixed(2)} €` : 'Sin definir'}
+                {info.dues_target
+                  ? `${Number(info.dues_target).toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`
+                  : 'Sin definir'}
               </p>
             </div>
             {isTreasurer && (
@@ -298,23 +319,7 @@ export default function Treasury() {
           ? 'Toca a un miembro para ver o añadir sus cuotas.'
           : 'Vista de administrador (solo lectura, solo el tesorero puede editar).'}
       </p>
-      <div className="flex flex-col gap-2">
-        {profiles.map((p) => {
-          const memberTotal = dues
-            .filter((d) => d.profile_id === p.id)
-            .reduce((sum, d) => sum + Number(d.amount), 0)
-          return (
-            <button
-              key={p.id}
-              onClick={() => openMember(p)}
-              className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-4 py-3 text-left shadow-sm active:bg-black/5"
-            >
-              <span className="font-medium text-neutral-900">{p.name}</span>
-              <span className="text-sm text-neutral-500">{formatDuesLabel(memberTotal, info.dues_target)}</span>
-            </button>
-          )
-        })}
-      </div>
+      <MemberDuesList balances={balances} target={info.dues_target} onOpen={openMember} onShare={handleShare} />
     </div>
   )
 }
