@@ -62,3 +62,10 @@ export interface CommunityEvent {
   created_by_profile_id: string | null
   created_at: string
 }
+
+export interface EventAttendance {
+  event_id: string
+  profile_id: string
+  status: 'voy' | 'no_voy'
+  updated_at: string
+}

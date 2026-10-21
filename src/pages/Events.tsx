@@ -1,11 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useToast } from '../context/ToastContext'
 import { PageSkeleton } from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
 import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
 import { todayStr } from '../lib/birthdays'
-import type { CommunityEvent } from '../types'
+import { HexAvatar } from '../components/HexAvatar'
+import type { CommunityEvent, EventAttendance, Profile } from '../types'
 
 const MONTH_NAMES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -26,6 +27,9 @@ export default function Events() {
   const { profile: me } = useSession()
   const { showToast } = useToast()
   const [events, setEvents] = useState<CommunityEvent[] | null>(null)
+  // null = la tabla de asistencia aún no existe en Supabase: se oculta esa parte
+  const [attendance, setAttendance] = useState<EventAttendance[] | null>(null)
+  const [members, setMembers] = useState<Profile[]>([])
   const [showPast, setShowPast] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
@@ -41,13 +45,42 @@ export default function Events() {
   }, [])
 
   async function load() {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('event_date')
-      .order('event_time')
-    if (!error && data) setEvents(data as CommunityEvent[])
-    else setEvents([])
+    const [eventsRes, attendanceRes, membersRes] = await Promise.all([
+      supabase.from('events').select('*').order('event_date').order('event_time'),
+      supabase.from('event_attendance').select('*'),
+      supabase.from('profiles').select('*').order('name'),
+    ])
+    setEvents(!eventsRes.error && eventsRes.data ? (eventsRes.data as CommunityEvent[]) : [])
+    setAttendance(attendanceRes.error ? null : ((attendanceRes.data as EventAttendance[]) ?? []))
+    setMembers((membersRes.data as Profile[]) ?? [])
+  }
+
+  async function handleRsvp(eventId: string, status: EventAttendance['status']) {
+    if (!me || !attendance) return
+    const current = attendance.find((a) => a.event_id === eventId && a.profile_id === me.id)
+    const others = attendance.filter((a) => !(a.event_id === eventId && a.profile_id === me.id))
+    const removing = current?.status === status
+
+    // Se actualiza la pantalla al instante y luego se guarda; si falla, se recarga.
+    setAttendance(
+      removing
+        ? others
+        : [...others, { event_id: eventId, profile_id: me.id, status, updated_at: new Date().toISOString() }],
+    )
+
+    const { error } = removing
+      ? await supabase.from('event_attendance').delete().eq('event_id', eventId).eq('profile_id', me.id)
+      : await supabase
+          .from('event_attendance')
+          .upsert({ event_id: eventId, profile_id: me.id, status, updated_at: new Date().toISOString() })
+
+    if (error) {
+      const detail = supabaseErrorMessage(error)
+      window.alert(`No se pudo guardar tu respuesta${detail ? `: ${detail}` : '.'}`)
+      await load()
+      return
+    }
+    showToast(removing ? 'Respuesta quitada' : status === 'voy' ? '¡Apuntado! Nos vemos allí' : 'Anotado que no vas')
   }
 
   async function handleCreate(e: FormEvent) {
@@ -180,7 +213,17 @@ export default function Events() {
 
       <div className="flex flex-col gap-2">
         {upcoming.map((ev) => (
-          <EventCard key={ev.id} event={ev} canDelete={ev.created_by_profile_id === me?.id || !!me?.is_admin} onDelete={handleDelete} />
+          <EventCard
+            key={ev.id}
+            event={ev}
+            canDelete={ev.created_by_profile_id === me?.id || !!me?.is_admin}
+            onDelete={handleDelete}
+            attendance={attendance?.filter((a) => a.event_id === ev.id) ?? null}
+            members={members}
+            meId={me?.id ?? null}
+            onRsvp={handleRsvp}
+            isPast={false}
+          />
         ))}
       </div>
 
@@ -195,7 +238,17 @@ export default function Events() {
           {showPast && (
             <div className="mt-2 flex flex-col gap-2 opacity-70">
               {past.map((ev) => (
-                <EventCard key={ev.id} event={ev} canDelete={ev.created_by_profile_id === me?.id || !!me?.is_admin} onDelete={handleDelete} />
+                <EventCard
+                  key={ev.id}
+                  event={ev}
+                  canDelete={ev.created_by_profile_id === me?.id || !!me?.is_admin}
+                  onDelete={handleDelete}
+                  attendance={attendance?.filter((a) => a.event_id === ev.id) ?? null}
+                  members={members}
+                  meId={me?.id ?? null}
+                  onRsvp={handleRsvp}
+                  isPast={true}
+                />
               ))}
             </div>
           )}
@@ -209,10 +262,20 @@ function EventCard({
   event,
   canDelete,
   onDelete,
+  attendance,
+  members,
+  meId,
+  onRsvp,
+  isPast,
 }: {
   event: CommunityEvent
   canDelete: boolean
   onDelete: (id: string) => void
+  attendance: EventAttendance[] | null
+  members: Profile[]
+  meId: string | null
+  onRsvp: (eventId: string, status: EventAttendance['status']) => void
+  isPast: boolean
 }) {
   const d = parseDate(event.event_date)
   const time = formatTime(event.event_time)
@@ -240,6 +303,126 @@ function EventCard({
           </button>
         )}
       </div>
+      {attendance && (
+        <Attendance
+          eventId={event.id}
+          attendance={attendance}
+          members={members}
+          meId={meId}
+          onRsvp={onRsvp}
+          isPast={isPast}
+        />
+      )}
+    </div>
+  )
+}
+
+function Attendance({
+  eventId,
+  attendance,
+  members,
+  meId,
+  onRsvp,
+  isPast,
+}: {
+  eventId: string
+  attendance: EventAttendance[]
+  members: Profile[]
+  meId: string | null
+  onRsvp: (eventId: string, status: EventAttendance['status']) => void
+  isPast: boolean
+}) {
+  const [showList, setShowList] = useState(false)
+  const byId = new Map(members.map((m) => [m.id, m]))
+  const peopleWith = (status: EventAttendance['status']) =>
+    attendance
+      .filter((a) => a.status === status)
+      .map((a) => byId.get(a.profile_id))
+      .filter((m): m is Profile => !!m)
+  const going = peopleWith('voy')
+  const notGoing = peopleWith('no_voy')
+  const mine = attendance.find((a) => a.profile_id === meId)?.status ?? null
+  const anyAnswer = going.length > 0 || notGoing.length > 0
+
+  const goingVerb = isPast ? (going.length === 1 ? 'fue' : 'fueron') : going.length === 1 ? 'va' : 'van'
+  const summary = !anyAnswer
+    ? isPast
+      ? 'Nadie marcó asistencia'
+      : 'Nadie ha respondido todavía'
+    : [going.length > 0 && `${going.length} ${goingVerb}`, notGoing.length > 0 && `${notGoing.length} no`]
+        .filter(Boolean)
+        .join(' · ')
+
+  return (
+    <div className="mt-3 border-t border-black/10 pt-3">
+      {!isPast && (
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <RsvpButton active={mine === 'voy'} onClick={() => onRsvp(eventId, 'voy')}>
+            ✓ Voy
+          </RsvpButton>
+          <RsvpButton active={mine === 'no_voy'} onClick={() => onRsvp(eventId, 'no_voy')}>
+            ✕ No voy
+          </RsvpButton>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowList((v) => !v)}
+        disabled={!anyAnswer}
+        className="flex w-full items-center justify-between gap-3 text-left disabled:cursor-default"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          {going.length > 0 && (
+            <div className="flex -space-x-3">
+              {going.slice(0, 5).map((m) => (
+                <div key={m.id} className="origin-left scale-75">
+                  <HexAvatar profile={m} />
+                </div>
+              ))}
+            </div>
+          )}
+          <span className="text-sm text-neutral-600">{summary}</span>
+        </div>
+        {anyAnswer && (
+          <span className="shrink-0 text-xs font-semibold text-black underline">{showList ? 'Ocultar' : 'Ver quién'}</span>
+        )}
+      </button>
+
+      {showList && (
+        <div className="mt-3 flex flex-col gap-3 text-sm">
+          {going.length > 0 && <NameList title={isPast ? 'Fueron' : 'Van'} people={going} meId={meId} />}
+          {notGoing.length > 0 && <NameList title="No van" people={notGoing} meId={meId} />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RsvpButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-colors ${
+        active ? 'border-black bg-black text-[#EAE032]' : 'border-black/15 bg-white text-neutral-700 active:bg-black/5'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function NameList({ title, people, meId }: { title: string; people: Profile[]; meId: string | null }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        {title} ({people.length})
+      </p>
+      <p className="text-neutral-800">
+        {people.map((p) => (p.id === meId ? `${p.name} (tú)` : p.name)).join(', ')}
+      </p>
     </div>
   )
 }

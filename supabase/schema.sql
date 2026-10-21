@@ -312,3 +312,36 @@ create policy "sanctions_write_admin" on sanctions
   ) with check (
     exists (select 1 from profiles p where p.auth_user_id = auth.uid() and p.is_admin = true)
   );
+
+-- Asistencia a eventos (ver supabase/migrations/2026-10-21_asistencia_eventos.sql)
+create table if not exists event_attendance (
+  event_id uuid not null references events(id) on delete cascade,
+  profile_id uuid not null references profiles(id) on delete cascade,
+  status text not null check (status in ('voy', 'no_voy')),
+  updated_at timestamptz not null default now(),
+  primary key (event_id, profile_id)
+);
+
+alter table event_attendance enable row level security;
+
+-- Cualquier miembro puede ver quién va a cada evento
+create policy "attendance_select" on event_attendance
+  for select using (auth.role() = 'authenticated');
+
+-- Cada miembro solo puede apuntarse, cambiar o quitar su propia respuesta
+create policy "attendance_insert_own" on event_attendance
+  for insert with check (
+    profile_id in (select id from profiles where auth_user_id = auth.uid())
+  );
+
+create policy "attendance_update_own" on event_attendance
+  for update using (
+    profile_id in (select id from profiles where auth_user_id = auth.uid())
+  ) with check (
+    profile_id in (select id from profiles where auth_user_id = auth.uid())
+  );
+
+create policy "attendance_delete_own" on event_attendance
+  for delete using (
+    profile_id in (select id from profiles where auth_user_id = auth.uid())
+  );
