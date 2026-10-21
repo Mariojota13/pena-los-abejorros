@@ -10,7 +10,7 @@ html, body, #root {
 
 body {
   margin: 0;
-  background-color: #dc2626;
+  background-color: #eae032;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -20,7 +20,7 @@ body {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: #dc2626;
+  background: #eae032;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }

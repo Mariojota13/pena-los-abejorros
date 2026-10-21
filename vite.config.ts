@@ -15,8 +15,8 @@ export default defineConfig({
         name: 'Peña Los Abejorros',
         short_name: 'Abejorros',
         description: 'App de la Peña Los Abejorros',
-        theme_color: '#DC2626',
-        background_color: '#DC2626',
+        theme_color: '#EAE032',
+        background_color: '#EAE032',
         display: 'standalone',
         start_url: '/',
         icons: [
