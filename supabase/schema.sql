@@ -119,6 +119,17 @@ create policy "events_delete_own" on events
     created_by_profile_id in (select id from profiles where auth_user_id = auth.uid())
   );
 
+-- El administrador puede editar o borrar cualquier evento
+create policy "events_update_admin" on events
+  for update using (
+    exists (select 1 from profiles p where p.auth_user_id = auth.uid() and p.is_admin = true)
+  );
+
+create policy "events_delete_admin" on events
+  for delete using (
+    exists (select 1 from profiles p where p.auth_user_id = auth.uid() and p.is_admin = true)
+  );
+
 -- Información general de la comunidad (una única fila)
 create table if not exists community_info (
   id int primary key default 1,

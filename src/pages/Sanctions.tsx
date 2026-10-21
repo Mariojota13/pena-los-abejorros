@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
-import { supabaseErrorMessage } from '../lib/errors'
+import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
 import type { Profile, Fine, Sanction } from '../types'
 
 const SEVERITY_OPTIONS: Sanction['severity'][] = ['leve', 'grave', 'muy grave']
@@ -128,18 +128,22 @@ export default function Sanctions() {
 
   async function toggleFineStatus(fine: Fine) {
     const newStatus = fine.status === 'pendiente' ? 'pagada' : 'pendiente'
-    await supabase.from('fines').update({ status: newStatus }).eq('id', fine.id)
+    const { error } = await supabase.from('fines').update({ status: newStatus }).eq('id', fine.id)
+    if (error) {
+      const detail = supabaseErrorMessage(error)
+      window.alert(`No se pudo cambiar el estado de la multa${detail ? `: ${detail}` : '.'}`)
+    }
     await load()
   }
 
   async function handleDeleteFine(id: string) {
-    await supabase.from('fines').delete().eq('id', id)
-    await load()
+    const deleted = await confirmAndDelete(() => supabase.from('fines').delete().eq('id', id).select(), 'esta multa')
+    if (deleted) await load()
   }
 
   async function handleDeleteSanction(id: string) {
-    await supabase.from('sanctions').delete().eq('id', id)
-    await load()
+    const deleted = await confirmAndDelete(() => supabase.from('sanctions').delete().eq('id', id).select(), 'esta sanción')
+    if (deleted) await load()
   }
 
   if (profiles === null || fines === null || sanctions === null) {

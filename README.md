@@ -17,14 +17,21 @@ App web (PWA) para la comunidad Abejorros: información general, cumpleaños, ev
 
 ## Cómo dar de alta a un miembro nuevo
 
-No hay registro público: solo un administrador puede crear miembros, en dos pasos.
+No hay registro público: solo un administrador puede crear miembros, y se hace todo desde la app.
 
-1. **Crea su ficha en la app**: entra como admin, ve a **Miembros → + Añadir**, y rellena su nombre, email, cumpleaños y cargo.
-2. **Crea su cuenta de acceso en Supabase**: en el panel de Supabase, ve a **Authentication → Users → Add user**, introduce el **mismo email** que pusiste en el paso 1 y una contraseña (compártesela por el canal que prefieras). Marca **Auto Confirm User** para que pueda entrar sin necesidad de confirmar por correo.
-
-La primera vez que esa persona inicie sesión en la app con ese email y contraseña, se vincula automáticamente a la ficha que creaste. Si alguien puede entrar en la app pero no aparece con su nombre, comprueba que el email coincide exactamente en ambos sitios.
+1. Entra como admin y ve a **Miembros → + Añadir**.
+2. Rellena su nombre, email, cumpleaños, cargo y una **contraseña inicial** (mínimo 6 caracteres).
+3. Al guardar, la app crea a la vez su ficha y su cuenta de acceso (función `create-member` de Supabase). Comparte con esa persona su email y contraseña por el canal que prefieras.
 
 Cada miembro puede cambiar su propia contraseña luego desde **Perfil → Cambiar contraseña**. Si alguien la olvida, tienes que resetearla tú desde el panel de Supabase (Authentication → Users → selecciona el usuario → Reset password), ya que no hay un email de "recuperar contraseña" automático configurado.
+
+Al eliminar un miembro desde la app (función `delete-member`) se borra también su cuenta de acceso y sus datos.
+
+> Las funciones `create-member` y `delete-member` están en `supabase/functions/` y deben estar desplegadas en tu proyecto de Supabase.
+
+## Cambios en la base de datos
+
+Los cambios posteriores al esquema inicial están en `supabase/migrations/`. Cada archivo se ejecuta una sola vez en **SQL Editor** de Supabase. `supabase/schema.sql` ya los incluye, para instalaciones desde cero.
 
 ## Desarrollo local
 

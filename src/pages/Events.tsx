@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
-import { supabaseErrorMessage } from '../lib/errors'
+import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
 import type { CommunityEvent } from '../types'
 
 const MONTH_NAMES = [
@@ -84,15 +84,17 @@ export default function Events() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('events').delete().eq('id', id)
-    await load()
+    const deleted = await confirmAndDelete(() => supabase.from('events').delete().eq('id', id).select(), 'este evento')
+    if (deleted) await load()
   }
 
   if (events === null) {
     return <div className="flex flex-1 items-center justify-center text-neutral-600">Cargando…</div>
   }
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  // Fecha de hoy en hora local (no UTC), en formato YYYY-MM-DD
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const upcoming = events.filter((ev) => ev.event_date >= todayStr)
   const past = events.filter((ev) => ev.event_date < todayStr).reverse()
 
@@ -172,7 +174,7 @@ export default function Events() {
 
       <div className="flex flex-col gap-2">
         {upcoming.map((ev) => (
-          <EventCard key={ev.id} event={ev} canDelete={ev.created_by_profile_id === me?.id} onDelete={handleDelete} />
+          <EventCard key={ev.id} event={ev} canDelete={ev.created_by_profile_id === me?.id || !!me?.is_admin} onDelete={handleDelete} />
         ))}
       </div>
 
@@ -187,7 +189,7 @@ export default function Events() {
           {showPast && (
             <div className="mt-2 flex flex-col gap-2 opacity-70">
               {past.map((ev) => (
-                <EventCard key={ev.id} event={ev} canDelete={ev.created_by_profile_id === me?.id} onDelete={handleDelete} />
+                <EventCard key={ev.id} event={ev} canDelete={ev.created_by_profile_id === me?.id || !!me?.is_admin} onDelete={handleDelete} />
               ))}
             </div>
           )}

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
-import { supabaseErrorMessage } from '../lib/errors'
+import { supabaseErrorMessage, confirmAndDelete } from '../lib/errors'
 import { formatDuesLabel } from '../lib/dues'
 import DuesProgress from '../components/DuesProgress'
 import type { Profile, Due, CommunityInfo } from '../types'
@@ -128,8 +128,8 @@ export default function Treasury() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('dues').delete().eq('id', id)
-    await load()
+    const deleted = await confirmAndDelete(() => supabase.from('dues').delete().eq('id', id).select(), 'esta cuota')
+    if (deleted) await load()
   }
 
   if (profiles === null || dues === null || info === null) {

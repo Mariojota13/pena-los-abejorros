@@ -40,6 +40,7 @@ Para deshacer algo ya publicado, se vuelve a cambiar el código y se hace otro c
 
 - **Git desde la VM de Cowork:** la carpeta es un checkout de Windows con finales de línea CRLF. Usar siempre `git -c core.autocrlf=true ...` para ver cambios reales; sin eso, git marca todos los archivos como modificados.
 - **Archivos `.lock`:** los comandos git desde la VM dejan `.git/index.lock` porque no se pueden borrar archivos sin permiso, y eso rompe GitHub Desktop. Usar `git --no-optional-locks` para comandos de solo lectura, y pedir permiso de borrado al inicio si hace falta usar git. Si queda un lock, moverlo (`mv .git/index.lock .git/stale-index-lock-N`). Claude no hace commits ni push: los hace Mario desde GitHub Desktop.
-- **Color de marca:** amarillo `#EAE032`. Si se cambia el fondo, hay que tocarlo en `src/index.css` (`body` y `#root`) y en `vite.config.ts` (`theme_color` y `background_color`).
-- **Alta de miembros:** ver el README (ficha en la app + usuario en Supabase Auth con el mismo email).
+- **Color de marca:** amarillo `#EAE032`. Si se cambia el fondo, hay que tocarlo en `src/index.css` (`body` y `#root`), en `vite.config.ts` (`theme_color` y `background_color`), en `index.html` (`<meta name="theme-color">`, barra de estado del móvil) y en `src/pages/Login.tsx` (`bg-[#EAE032]`).
+- **Cambios en Supabase:** los cambios de base de datos van como archivo nuevo en `supabase/migrations/` (Mario lo ejecuta en el SQL Editor) y también se añaden a `supabase/schema.sql`.
+- **Alta de miembros:** desde la app (Miembros → + Añadir), que crea ficha y cuenta con la función `create-member`. Ver README.
 - **Desarrollo local:** `npm install` y luego `npm run dev` (puerto 5173).
