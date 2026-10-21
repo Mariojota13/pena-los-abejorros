@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../context/SessionContext'
+import { avatarUrl } from '../lib/avatar'
 import type { Profile } from '../types'
 
 const MONTH_NAMES = [
@@ -92,18 +93,21 @@ export default function Birthdays() {
                   u.daysUntil === 0 ? 'border-black bg-[#EAE032]' : 'border-black/10 bg-white'
                 }`}
               >
-                <div>
-                  <p className="font-medium text-neutral-900">
-                    {u.profile.name}
-                    {isMe && <span className="text-neutral-500"> (tú)</span>}
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    {u.nextDate.getDate()} de {MONTH_NAMES[month]}
-                    {u.turningAge !== null && ` · cumple ${u.turningAge}`}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <HexAvatar profile={u.profile} />
+                  <div className="min-w-0">
+                    <p className="font-medium text-neutral-900">
+                      {u.profile.name}
+                      {isMe && <span className="text-neutral-500"> (tú)</span>}
+                    </p>
+                    <p className="text-sm text-neutral-500">
+                      {u.nextDate.getDate()} {MONTH_NAMES[month].slice(0, 3)}
+                      {u.turningAge !== null && ` · cumple ${u.turningAge}`}
+                    </p>
+                  </div>
                 </div>
                 <span
-                  className={`text-sm font-semibold ${
+                  className={`shrink-0 text-sm font-semibold ${
                     u.daysUntil === 0 ? 'text-black' : 'text-neutral-400'
                   }`}
                 >
@@ -114,6 +118,16 @@ export default function Birthdays() {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function HexAvatar({ profile }: { profile: Profile }) {
+  const photo = avatarUrl(profile.avatar_path)
+  if (photo) return <img src={photo} alt="" className="hex-cell h-10 w-10 shrink-0 object-cover" />
+  return (
+    <div className="hex-cell flex h-10 w-10 shrink-0 items-center justify-center bg-black text-sm font-bold text-white">
+      {profile.name.charAt(0).toUpperCase()}
     </div>
   )
 }

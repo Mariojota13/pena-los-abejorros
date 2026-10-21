@@ -214,13 +214,15 @@ function EventCard({
   return (
     <div className="rounded-xl border border-black/10 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="hex flex h-12 w-14 shrink-0 flex-col items-center justify-center bg-black leading-none text-[#EAE032]">
+          <span className="text-lg font-black">{d.getDate()}</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider">{MONTH_NAMES[d.getMonth()].slice(0, 3)}</span>
+        </div>
+        <div className="min-w-0 flex-1">
           <p className="font-medium text-neutral-900">{event.title}</p>
-          <p className="text-sm text-neutral-500">
-            {d.getDate()} de {MONTH_NAMES[d.getMonth()]}
-            {time && ` · ${time}`}
-            {event.location && ` · ${event.location}`}
-          </p>
+          {(time || event.location) && (
+            <p className="text-sm text-neutral-500">{[time, event.location].filter(Boolean).join(' · ')}</p>
+          )}
           {event.description && <p className="mt-2 text-sm text-neutral-700">{event.description}</p>}
         </div>
         {canDelete && (
